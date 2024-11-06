@@ -95,20 +95,18 @@ const userlogin = async (req, res) => {
         .send({ message: "Invalid password", status: false });
     }
 
-  
     return res.status(200).send({
       message: "User logged in successfully",
       status: true,
       email,
       role: user.role,
-      _id: user._id, 
+      id: user._id,
     });
   } catch (error) {
     console.log(error);
     return res.status(408).send({ message: "Internal server error" });
   }
 };
-
 
 const getData = async (req, res) => {
   try {
