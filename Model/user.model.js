@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const { object, boolean } = require("yup");
 
 const OrderSchema = new mongoose.Schema({
   productId: { type: String, required: true },
@@ -16,10 +17,11 @@ const OrderSchema = new mongoose.Schema({
 });
 
 const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, trim: true, unique },
+  username: { type: String, required: true, trim: true },
+  password: { type: String, required: true, trim: true },
   email: { type: String, unique: true, required: true, trim: true },
   phoneNumber: { type: String, required: true, trim: true },
-  role: { type: String, required: true, trim, default: "User" },
+  role: { type: String, required: true, trim: true, default: "User" },
   orders: [OrderSchema],
 });
 
@@ -35,5 +37,5 @@ UserSchema.pre("save", function (next) {
     .catch((err) => next(err));
 });
 
-const Usermodel = mongoose.model("User", UserSchema);
-module.exports = { UserModel };
+const usermodel = mongoose.model("chefChillerUser", UserSchema);
+module.exports = { usermodel };

@@ -1,32 +1,37 @@
 const express = require("express");
-const app = express();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 const ejs = require("ejs");
-app.set("view engine", "ejs");
-app.use(bodyParser.json());
-app.use(cors({ origin: "*" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
-const multer = require("multer");
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const userrouter = require("./Route/user.route");
 
-const port = process.env.PORT || 5010;
-const uri = process.env.MONGODB_URI;
+const app = express();
+
+app.set("view engine", "ejs");
+
+app.use(cors({ origin: "*" }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
+
+app.use("/", userrouter);
 
 const connect = async () => {
   try {
-    const connected = await mongoose.connect(uri);
-    if (connected) {
-      console.log("connected to database");
-    }
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("Connected to database");
   } catch (error) {
-    console.log(error);
+    console.error("Database connection error:", error);
   }
 };
-connect();
 
-app.listen(port, () => {
-  console.log("app started at port" + port);
-});
+const port = process.env.PORT || 5010;
+connect()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`App started at port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect to the database:", err);
+  });

@@ -1,9 +1,10 @@
 const { adminvalidator } = require("../Middleware/adminvalidator");
 const { usermodel } = require("../Model/user.model");
+const sendRegistrationEmail = require("../Mailer/signupMail");
 
 const usersignup = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, phoneNumber } = req.body;
 
     if (!username || !password || !email || !phoneNumber) {
       return res.status(400).send({
@@ -44,7 +45,7 @@ const usersignup = async (req, res) => {
       username,
       email,
       password,
-      phonoNumber,
+      phoneNumber,
     });
 
     if (!user) {
@@ -53,6 +54,8 @@ const usersignup = async (req, res) => {
         status: false,
       });
     }
+
+    sendRegistrationEmail(email, username);
 
     return res.status(201).send({
       message: "User signed up successfully",
@@ -69,4 +72,56 @@ const usersignup = async (req, res) => {
   }
 };
 
-module.exports = { usersignup };
+const userlogin = async (req, res) => {
+  const { email, password } = req.body;
+  // console.log(req.body);
+  try {
+    if (email === "" || password === "") {
+      return res
+        .status(405)
+        .send({ message: "input fields cannot be empty", status: false });
+    }
+
+    const user = await usermodel.findOne({ email: email });
+    if (!user) {
+      return res.status(403).send({ message: "user not found", status: false });
+    }
+
+    const hashpassword = await bcrypt.compare(password, user.password);
+    if (!hashpassword) {
+      return res
+        .status(401)
+        .send({ message: "invalid password", status: false });
+    }
+
+    return res.status(200).send({
+      message: "user logged in successful",
+      status: true,
+      useremail,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(408).send({ message: "internal server error" });
+  }
+};
+
+const getData = async (req, res) => {
+  try {
+    const data = await usermodel.find({});
+    if (data.length === 0) {
+      console.log("No data found");
+      res.status(404).send({ message: "No data found" });
+    } else {
+      console.log(data);
+      data.forEach((user) => {
+        console.log(user.username);
+      });
+      res.status(200).send(data);
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
+
+module.exports = { usersignup, getData, userlogin };
