@@ -1,6 +1,7 @@
 const { adminvalidator } = require("../Middleware/adminvalidator");
 const { usermodel } = require("../Model/user.model");
 const sendRegistrationEmail = require("../Mailer/signupMail");
+const bcrypt = require("bcryptjs");
 
 const usersignup = async (req, res) => {
   try {
@@ -74,36 +75,40 @@ const usersignup = async (req, res) => {
 
 const userlogin = async (req, res) => {
   const { email, password } = req.body;
-  // console.log(req.body);
+
   try {
     if (email === "" || password === "") {
       return res
         .status(405)
-        .send({ message: "input fields cannot be empty", status: false });
+        .send({ message: "Input fields cannot be empty", status: false });
     }
 
     const user = await usermodel.findOne({ email: email });
     if (!user) {
-      return res.status(403).send({ message: "user not found", status: false });
+      return res.status(403).send({ message: "User not found", status: false });
     }
 
     const hashpassword = await bcrypt.compare(password, user.password);
     if (!hashpassword) {
       return res
         .status(401)
-        .send({ message: "invalid password", status: false });
+        .send({ message: "Invalid password", status: false });
     }
 
+  
     return res.status(200).send({
-      message: "user logged in successful",
+      message: "User logged in successfully",
       status: true,
-      useremail,
+      email,
+      role: user.role,
+      _id: user._id, 
     });
   } catch (error) {
     console.log(error);
-    return res.status(408).send({ message: "internal server error" });
+    return res.status(408).send({ message: "Internal server error" });
   }
 };
+
 
 const getData = async (req, res) => {
   try {
