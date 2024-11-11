@@ -3,8 +3,8 @@ const { string } = require("yup");
 
 const productchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true },
-  category: [{ type: String }],
-  prepTime: [{ type: String }],
+  category: { type: String },
+  prepTime: { type: String },
   description: { type: String },
   price: { type: Number },
   image: { type: String },
