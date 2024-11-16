@@ -127,4 +127,31 @@ const getData = async (req, res) => {
   }
 };
 
-module.exports = { usersignup, getData, userlogin };
+const getUserById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const user = await usermodel.findById(id);
+
+    if (!user) {
+      return res.status(404).send({
+        message: "User not found",
+        status: false,
+      });
+    }
+
+    res.status(200).send({
+      message: "User found",
+      status: true,
+      data: user,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      message: "Internal server error",
+      status: false,
+    });
+  }
+};
+
+module.exports = { usersignup, getData, userlogin, getUserById };

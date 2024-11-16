@@ -1,4 +1,5 @@
 const { productmodel } = require("../Model/admin.model");
+const { usermodel } = require("../Model/user.model");
 const { cloudinary } = require("../utils/cloudinary");
 
 const uploadProduct = async (req, res) => {
@@ -89,6 +90,43 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// const addproduct = async (req, res) => {
+//   const { userId, productId, quantity, productName, productPrice } = req.body;
+//   try {
+//     console.log(productId);
+//     console.log(productName);
+
+//     const user = await usermodel.findById(userId);
+//     if (!user) {
+//       return res.status(408).json({ message: "User not found" });
+//     }
+
+//     const existingProductIndex = user.orders.findIndex(
+//       (order) => order.productId === productId
+//     );
+
+//     if (existingProductIndex === -1) {
+//       user.orders.push({
+//         productId,
+//         productName,
+//         productPrice,
+//         quantity,
+//       });
+//     } else {
+//       if (quantity === 0) {
+//         user.orders.splice(existingProductIndex, 1);
+//       } else {
+//         user.orders[existingProductIndex].quantity = quantity;
+//       }
+//     }
+
+//     await user.save();
+//     res.status(200).json({ message: "Cart updated successfully" });
+//   } catch (err) {
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// };
+
 const editproduct = async (req, res) => {
   try {
     const { name, category, prepTime, description, price } = req.body;
@@ -139,6 +177,78 @@ const editproduct = async (req, res) => {
   }
 };
 
+const addproduct = async (req, res) => {
+  const { userId, productId, action, productName, productPrice } = req.body;
+
+  try {
+    const user = await usermodel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingProductIndex = user.orders.findIndex(
+      (order) => order.productId.toString() === productId.toString()
+    );
+
+    switch (action) {
+      case "add":
+        if (existingProductIndex === -1) {
+          user.orders.push({
+            productId,
+            productName,
+            productPrice,
+            quantity: 1,
+          });
+        } else {
+          user.orders[existingProductIndex].quantity += 1;
+        }
+        break;
+
+      case "increase":
+        if (existingProductIndex === -1) {
+          user.orders.push({
+            productId,
+            productName,
+            productPrice,
+            quantity: 1,
+          });
+        } else {
+          user.orders[existingProductIndex].quantity += 1;
+        }
+        break;
+
+      case "decrease":
+        if (existingProductIndex === -1) {
+          return res.status(400).json({ message: "Product not in cart" });
+        } else {
+          const existingOrder = user.orders[existingProductIndex];
+          if (existingOrder.quantity > 1) {
+            existingOrder.quantity -= 1;
+          } else {
+            user.orders.splice(existingProductIndex, 1);
+          }
+        }
+        break;
+
+      case "delete":
+        if (existingProductIndex === -1) {
+          return res.status(400).json({ message: "Product not in cart" });
+        } else {
+          user.orders.splice(existingProductIndex, 1);
+        }
+        break;
+
+      default:
+        return res.status(400).json({ message: "Invalid action" });
+    }
+
+    await user.save();
+    res.status(200).json({ message: "Cart updated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 const getProductData = async (req, res) => {
   try {
     const product = req.params.productId;
@@ -149,10 +259,48 @@ const getProductData = async (req, res) => {
   }
 };
 
+const updateCartInDatabase = (product, action) => {
+  setCart((prevCart) => {
+    const existingProductIndex = prevCart.findIndex(
+      (item) => item.productId === product.productId
+    );
+
+    if (existingProductIndex === -1) {
+      // If the product doesn't exist in the cart, add it
+      return [...prevCart, { ...product, quantity: 1 }];
+    } else {
+      const updatedCart = [...prevCart];
+
+      if (action === "increase") {
+        // Increase the quantity by 1
+        updatedCart[existingProductIndex].quantity += 1;
+      } else if (
+        action === "decrease" &&
+        updatedCart[existingProductIndex].quantity > 1
+      ) {
+        // Decrease the quantity by 1, but not below 1
+        updatedCart[existingProductIndex].quantity -= 1;
+      } else if (action === "delete") {
+        // Delete the product from the cart by setting the quantity to 0
+        updatedCart[existingProductIndex].quantity = 0;
+      }
+
+      // Remove the product if quantity is 0 (effectively deletes the product from the cart)
+      if (updatedCart[existingProductIndex].quantity === 0) {
+        updatedCart.splice(existingProductIndex, 1);
+      }
+
+      return updatedCart;
+    }
+  });
+};
+
 module.exports = {
   uploadProduct,
   getProducts,
   deleteProduct,
   editproduct,
   getProductData,
+  addproduct,
+  updateCartInDatabase,
 };

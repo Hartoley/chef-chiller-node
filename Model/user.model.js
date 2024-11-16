@@ -7,12 +7,13 @@ const OrderSchema = new mongoose.Schema({
   productName: { type: String, required: true },
   paid: { type: Boolean, default: false },
   orderedDate: { type: Date, default: Date.now },
-  dateToBeDelivered: { type: Date, required: true },
+  dateToBeDelivered: { type: Date, default: Date.now },
   dateDelivered: { type: Date },
   transactionId: { type: String },
+  quantity: { type: Number },
   delivered: { type: Boolean, default: false },
   productPrice: { type: Number, required: true },
-  paymentMethod: { type: String, required: true },
+  paymentMethod: { type: String, default: "Payment on Delivery" },
   status: { type: String, default: "Pending" },
 });
 
