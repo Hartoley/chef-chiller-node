@@ -1,4 +1,5 @@
 const { productmodel } = require("../Model/admin.model");
+const { adminordersmodel } = require("../Model/admin.model");
 const { usermodel } = require("../Model/user.model");
 const { cloudinary } = require("../utils/cloudinary");
 
@@ -178,7 +179,9 @@ const editproduct = async (req, res) => {
 };
 
 const addproduct = async (req, res) => {
-  const { userId, productId, action, productName, productPrice } = req.body;
+  const { image, userId, productId, action, productName, productPrice } =
+    req.body;
+  console.log(productName);
 
   try {
     const user = await usermodel.findById(userId);
@@ -194,6 +197,7 @@ const addproduct = async (req, res) => {
       case "add":
         if (existingProductIndex === -1) {
           user.orders.push({
+            image,
             productId,
             productName,
             productPrice,
@@ -207,6 +211,7 @@ const addproduct = async (req, res) => {
       case "increase":
         if (existingProductIndex === -1) {
           user.orders.push({
+            image,
             productId,
             productName,
             productPrice,
@@ -246,6 +251,58 @@ const addproduct = async (req, res) => {
     res.status(200).json({ message: "Cart updated successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const approveAndCopyOrders = async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    const user = await usermodel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const ordersToApprove = user.orders.filter((order) => !order.approved);
+
+    if (ordersToApprove.length === 0) {
+      return res.status(400).json({ message: "No pending orders to approve." });
+    }
+
+    ordersToApprove.forEach((order) => {
+      order.approved = true;
+    });
+
+    await user.save();
+
+    const adminOrders = ordersToApprove.map((order) => ({
+      userId: userId,
+      productId: order.productId,
+      productName: order.productName,
+      paid: order.paid,
+      approved: true,
+      orderedDate: order.orderedDate,
+      dateToBeDelivered: order.dateToBeDelivered,
+      dateDelivered: order.dateDelivered,
+      transactionId: order.transactionId,
+      quantity: order.quantity,
+      delivered: order.delivered,
+      productPrice: order.productPrice,
+      paymentMethod: order.paymentMethod,
+      status: order.status,
+      image: order.image,
+    }));
+
+    await adminordersmodel.insertMany(adminOrders);
+
+    return res
+      .status(200)
+      .json({ message: "Orders approved and copied successfully!" });
+  } catch (error) {
+    console.error("Error approving and copying orders:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
   }
 };
 
@@ -303,4 +360,5 @@ module.exports = {
   getProductData,
   addproduct,
   updateCartInDatabase,
+  approveAndCopyOrders,
 };
