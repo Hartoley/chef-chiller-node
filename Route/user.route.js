@@ -20,7 +20,7 @@ router.post("/user/register", usersignup);
 router.post("/user/login", userlogin);
 router.get("/user/getdata", getData);
 router.get("/getallproject", getAllProjects);
-router.get("/deleteproject", deleteProject);
+router.delete("/deleteproject/:id", deleteProject);
 router.post("/uploadmyproject", upload.single("image"), addProject);
 router.get("/user/getuser/:id", getUserById);
 

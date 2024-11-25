@@ -1,5 +1,5 @@
 const { Project } = require("../Model/user.model");
-const { eventEmitter } = require("../eventemmiter");
+const eventEmitter = require("../eventemmiter");
 
 const addProject = async (req, res) => {
   try {
@@ -14,7 +14,6 @@ const addProject = async (req, res) => {
     } = req.body;
     let image = req.file ? req.file.path : null;
 
-    // Normalize the image path (replace backslashes with forward slashes)
     if (image) {
       image = image.replace(/\\/g, "/"); // Replace all backslashes with forward slashes
     }
@@ -44,10 +43,7 @@ const addProject = async (req, res) => {
     });
 
     const savedProject = await newProject.save();
-
-    if (eventEmitter) {
-      eventEmitter.emit("newProject", savedProject);
-    }
+    eventEmitter.emit("newProject", savedProject);
 
     res
       .status(201)
@@ -117,7 +113,7 @@ const updateProject = async (req, res) => {
     }
 
     // Emit event to WebSocket clients when a project is updated
-    io.emit("projectUpdated", updatedProject);
+    eventEmitter.emit("projectUpdated", updatedProject);
 
     res.status(200).json({
       message: "Project updated successfully!",
@@ -130,17 +126,18 @@ const updateProject = async (req, res) => {
 
 // Delete Project
 const deleteProject = async (req, res) => {
+  const { id } = req.params;
   try {
-    const deletedProject = await Project.findByIdAndDelete(req.params.id);
+    const deletedProject = await Project.findByIdAndDelete(id);
     if (!deletedProject) {
       return res.status(404).json({ message: "Project not found." });
     }
 
-    // Emit event to WebSocket clients when a project is deleted
-    io.emit("projectDeleted", deletedProject);
+    eventEmitter.emit("projectDeleted", deletedProject);
 
     res.status(200).json({ message: "Project deleted successfully!" });
   } catch (error) {
+    console.error("Error deleting project:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
