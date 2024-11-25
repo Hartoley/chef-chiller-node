@@ -17,6 +17,7 @@ const AdminOrderSchema = new mongoose.Schema({
   paymentMethod: { type: String, default: "Payment on Delivery" },
   status: { type: String, default: "Pending" },
   image: { type: String },
+  totalPrice: { type: Number },
   paymentImage: { type: String },
 });
 

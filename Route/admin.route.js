@@ -15,7 +15,7 @@ const {
 router.get("/user/getproducts", getProducts);
 router.delete("/delete/:productId", deleteProduct);
 router.get("/product/:productId", getProductData);
-router.get("/makeOrder/:userId", approveAndCopyOrders);
+router.post("/makeOrder", approveAndCopyOrders);
 router.post("/updatecart", addproduct);
 router.post("/edit/:productId", upload.single("image"), editproduct);
 

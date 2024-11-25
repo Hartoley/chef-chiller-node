@@ -2,6 +2,50 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const { object, boolean } = require("yup");
 
+const projectSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  features: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
+  technologies: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
+  liveDemoLink: {
+    type: String,
+    default: null, // URL to live project demo
+  },
+  repoLink: {
+    type: String,
+    default: null, // GitHub or repository link
+  },
+  status: {
+    type: String,
+    enum: ["Completed", "Ongoing"],
+    default: "Ongoing",
+  },
+  image: {
+    type: String,
+    default: null,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const OrderSchema = new mongoose.Schema({
   productId: { type: String, required: true },
   productName: { type: String, required: true },
@@ -15,6 +59,7 @@ const OrderSchema = new mongoose.Schema({
   quantity: { type: Number },
   delivered: { type: Boolean, default: false },
   productPrice: { type: Number, required: true },
+  totalPrice: { type: Number },
   paymentMethod: { type: String, default: "Payment on Delivery" },
   status: { type: String, default: "Pending" },
 });
@@ -57,4 +102,5 @@ UserSchema.pre("save", function (next) {
 });
 
 const usermodel = mongoose.model("chefChillerUser", UserSchema);
-module.exports = { usermodel };
+const Project = mongoose.model("myProjects", projectSchema);
+module.exports = { usermodel, Project };

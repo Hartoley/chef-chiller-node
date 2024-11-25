@@ -145,6 +145,7 @@ const getUserById = async (req, res) => {
       status: true,
       data: user,
     });
+    io.emit("userFound", { message: "User data fetched", data: user });
   } catch (err) {
     console.error(err);
     res.status(500).send({

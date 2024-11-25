@@ -91,43 +91,6 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// const addproduct = async (req, res) => {
-//   const { userId, productId, quantity, productName, productPrice } = req.body;
-//   try {
-//     console.log(productId);
-//     console.log(productName);
-
-//     const user = await usermodel.findById(userId);
-//     if (!user) {
-//       return res.status(408).json({ message: "User not found" });
-//     }
-
-//     const existingProductIndex = user.orders.findIndex(
-//       (order) => order.productId === productId
-//     );
-
-//     if (existingProductIndex === -1) {
-//       user.orders.push({
-//         productId,
-//         productName,
-//         productPrice,
-//         quantity,
-//       });
-//     } else {
-//       if (quantity === 0) {
-//         user.orders.splice(existingProductIndex, 1);
-//       } else {
-//         user.orders[existingProductIndex].quantity = quantity;
-//       }
-//     }
-
-//     await user.save();
-//     res.status(200).json({ message: "Cart updated successfully" });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
 const editproduct = async (req, res) => {
   try {
     const { name, category, prepTime, description, price } = req.body;
@@ -255,7 +218,7 @@ const addproduct = async (req, res) => {
 };
 
 const approveAndCopyOrders = async (req, res) => {
-  const { userId } = req.body;
+  const { userId, subtotal } = req.body;
 
   try {
     const user = await usermodel.findById(userId);
@@ -271,7 +234,10 @@ const approveAndCopyOrders = async (req, res) => {
 
     ordersToApprove.forEach((order) => {
       order.approved = true;
+      order.totalPrice = subtotal;
     });
+
+    user.totalPrice = subtotal;
 
     await user.save();
 
@@ -291,6 +257,7 @@ const approveAndCopyOrders = async (req, res) => {
       paymentMethod: order.paymentMethod,
       status: order.status,
       image: order.image,
+      totalPrice: subtotal,
     }));
 
     await adminordersmodel.insertMany(adminOrders);
