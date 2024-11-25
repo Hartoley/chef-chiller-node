@@ -14,6 +14,7 @@ const {
   addProject,
   getAllProjects,
   deleteProject,
+  getProjectById,
 } = require("../Controller/project.controller");
 
 router.post("/user/register", usersignup);
@@ -21,7 +22,8 @@ router.post("/user/login", userlogin);
 router.get("/user/getdata", getData);
 router.get("/getallproject", getAllProjects);
 router.delete("/deleteproject/:id", deleteProject);
+router.get("/fetchproject/:pId", getProjectById);
 router.post("/uploadmyproject", upload.single("image"), addProject);
-router.get("/user/getuser/:id", getUserById);
+router.get("/user/getuser/:pId", getUserById);
 
 module.exports = router;
