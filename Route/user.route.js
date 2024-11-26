@@ -15,14 +15,16 @@ const {
   getAllProjects,
   deleteProject,
   getProjectById,
+  updateProject,
 } = require("../Controller/project.controller");
 
 router.post("/user/register", usersignup);
 router.post("/user/login", userlogin);
+router.post("/updateproject", updateProject);
 router.get("/user/getdata", getData);
 router.get("/getallproject", getAllProjects);
 router.delete("/deleteproject/:id", deleteProject);
-router.get("/fetchproject/:pId", getProjectById);
+router.get("/fetchproject/:id", getProjectById);
 router.post("/uploadmyproject", upload.single("image"), addProject);
 router.get("/user/getuser/:pId", getUserById);
 
