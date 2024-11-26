@@ -14,34 +14,43 @@ const addProject = async (req, res) => {
     } = req.body;
     let image = req.file ? req.file.path : null;
 
+    // Normalize the image path
     if (image) {
-      image = image.replace(/\\/g, "/"); // Replace all backslashes with forward slashes
+      image = image.replace(/\\/g, "/");
     }
 
+    // Validate required fields
     if (!title || !description || !features || !technologies) {
       return res
         .status(400)
         .json({ message: "All required fields must be provided." });
     }
 
-    const featureArray = Array.isArray(features)
-      ? features
-      : features.split(",");
-    const technologyArray = Array.isArray(technologies)
-      ? technologies
-      : technologies.split(",");
+    // Parse features and technologies (JSON strings from the frontend)
+    let featureArray, technologyArray;
+    try {
+      featureArray = JSON.parse(features); // Parse JSON string into an array
+      technologyArray = JSON.parse(technologies); // Parse JSON string into an array
+    } catch (error) {
+      return res.status(400).json({
+        message: "Features and technologies must be valid JSON arrays.",
+        error: error.message,
+      });
+    }
 
+    // Create the new project
     const newProject = new Project({
       title,
       description,
-      features: featureArray,
-      technologies: technologyArray,
+      features: featureArray, // Save as an array
+      technologies: technologyArray, // Save as an array
       liveDemoLink,
       repoLink,
       status,
       image,
     });
 
+    // Save the project and emit event
     const savedProject = await newProject.save();
     eventEmitter.emit("newProject", savedProject);
 
