@@ -14,7 +14,16 @@ const adminrouter = require("./Route/admin.route");
 
 const app = express();
 
-app.use("/Uploads", express.static(path.join(__dirname, "Uploads")));
+app.use(
+  "/Uploads",
+  (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Cache-Control", "public, max-age=31536000");
+    next();
+  },
+  express.static(path.join(__dirname, "Uploads"))
+);
 
 const server = http.createServer(app);
 const io = socketIo(server, {

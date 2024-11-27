@@ -10,10 +10,10 @@ const adminvalidator = yup.object().shape({
   password: yup
     .string()
     .min(5, "password is too short")
-    .matches(
-      `^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-])`,
-      "password must have at least one capital letter, an integer and a special character"
-    )
+    // .matches(
+    //   `^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-])`,
+    //   "password must have at least one capital letter, an integer and a special character"
+    // )
     .required("password is required"),
 });
 
