@@ -2,6 +2,7 @@ const { adminvalidator } = require("../Middleware/adminvalidator");
 const { usermodel } = require("../Model/user.model");
 const sendRegistrationEmail = require("../Mailer/signupMail");
 const bcrypt = require("bcryptjs");
+const eventEmitter = require("../eventemmiter");
 
 const usersignup = async (req, res) => {
   try {
@@ -145,7 +146,10 @@ const getUserById = async (req, res) => {
       status: true,
       data: user,
     });
-    io.emit("userFound", { message: "User data fetched", data: user });
+    eventEmitter.emit("userFound", {
+      message: "User data fetched",
+      data: user,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send({
