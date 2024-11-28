@@ -14,10 +14,9 @@ const addProject = async (req, res) => {
     } = req.body;
     let image = req.file ? req.file.path : null;
 
-    // Normalize the image path
-    if (image) {
-      image = image.replace(/\\/g, "/");
-    }
+    const result = await cloudinary.uploader.upload(image.path, {
+      folder: "products",
+    });
 
     // Validate required fields
     if (!title || !description || !features || !technologies) {
@@ -47,7 +46,7 @@ const addProject = async (req, res) => {
       liveDemoLink,
       repoLink,
       status,
-      image,
+      image: result.secure_url,
     });
 
     // Save the project and emit event
