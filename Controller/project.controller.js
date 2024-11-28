@@ -13,22 +13,17 @@ const addProject = async (req, res) => {
       repoLink,
       status,
     } = req.body;
-    let image = req.file ? req.file.path : null;
 
-    const result = await cloudinary.uploader.upload(image.path, {
-      folder: "products",
-    });
-
-    if (!title || !description || !features || !technologies) {
-      return res
-        .status(400)
-        .json({ message: "All required fields must be provided." });
+    if (!title || !description || !features || !technologies || !req.file) {
+      return res.status(400).json({
+        message: "All required fields and an image file must be provided.",
+      });
     }
 
     let featureArray, technologyArray;
     try {
-      featureArray = JSON.parse(features); // Parse JSON string into an array
-      technologyArray = JSON.parse(technologies); // Parse JSON string into an array
+      featureArray = JSON.parse(features);
+      technologyArray = JSON.parse(technologies);
     } catch (error) {
       return res.status(400).json({
         message: "Features and technologies must be valid JSON arrays.",
@@ -36,19 +31,21 @@ const addProject = async (req, res) => {
       });
     }
 
-    // Create the new project
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "products",
+    });
+
     const newProject = new Project({
       title,
       description,
-      features: featureArray, // Save as an array
-      technologies: technologyArray, // Save as an array
+      features: featureArray,
+      technologies: technologyArray,
       liveDemoLink,
       repoLink,
       status,
       image: result.secure_url,
     });
 
-    // Save the project and emit event
     const savedProject = await newProject.save();
     eventEmitter.emit("newProject", savedProject);
 

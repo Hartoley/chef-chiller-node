@@ -25,8 +25,8 @@ router.get("/user/getdata", getData);
 router.get("/getallproject", getAllProjects);
 router.delete("/deleteproject/:id", deleteProject);
 router.get("/fetchproject/:id", getProjectById);
-router.post("/uploadmyproject", addProject);
-// router.post("/uploadmyproject", upload.single("image"), addProject);
+// router.post("/uploadmyproject", addProject);
+router.post("/uploadmyproject", upload.single("image"), addProject);
 // router.get("/user/getuser/:pId", getUserById);
 router.get("/user/getuser/:id", getUserById);
 
