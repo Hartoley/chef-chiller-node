@@ -1,5 +1,6 @@
 const { Project } = require("../Model/user.model");
 const eventEmitter = require("../eventemmiter");
+const { cloudinary } = require("../utils/cloudinary");
 
 const addProject = async (req, res) => {
   try {
@@ -18,14 +19,12 @@ const addProject = async (req, res) => {
       folder: "products",
     });
 
-    // Validate required fields
     if (!title || !description || !features || !technologies) {
       return res
         .status(400)
         .json({ message: "All required fields must be provided." });
     }
 
-    // Parse features and technologies (JSON strings from the frontend)
     let featureArray, technologyArray;
     try {
       featureArray = JSON.parse(features); // Parse JSON string into an array
