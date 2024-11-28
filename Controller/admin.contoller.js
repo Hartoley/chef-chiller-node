@@ -217,8 +217,8 @@ const addproduct = async (req, res) => {
   }
 };
 
-const approveAndCopyOrders = async (req, res) => {
-  const { userId, subtotal } = req.body;
+const approveAndPackOrders = async (req, res) => {
+  const { userId } = req.body;
 
   try {
     const user = await usermodel.findById(userId);
@@ -226,47 +226,42 @@ const approveAndCopyOrders = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const ordersToApprove = user.orders.filter((order) => !order.approved);
-
-    if (ordersToApprove.length === 0) {
-      return res.status(400).json({ message: "No pending orders to approve." });
+    if (user.orders.length === 0) {
+      return res.status(400).json({ message: "No orders to process." });
     }
 
-    ordersToApprove.forEach((order) => {
-      order.approved = true;
-      order.totalPrice = subtotal;
-    });
-
-    user.totalPrice = subtotal;
-
-    await user.save();
-
-    const adminOrders = ordersToApprove.map((order) => ({
-      userId: userId,
-      productId: order.productId,
-      productName: order.productName,
-      paid: order.paid,
+    const packedOrder = {
+      products: user.orders.map((order) => ({
+        productId: order.productId,
+        productName: order.productName,
+        image: order.image,
+        quantity: order.quantity,
+        price: order.productPrice,
+      })),
+      userId: user._id,
+      Total: user.orders.reduce(
+        (total, order) => total + (order.productPrice * order.quantity || 0),
+        0
+      ),
+      paymentImage: null,
+      paid: user.orders.some((order) => order.paid),
       approved: true,
-      orderedDate: order.orderedDate,
-      dateToBeDelivered: order.dateToBeDelivered,
-      dateDelivered: order.dateDelivered,
-      transactionId: order.transactionId,
-      quantity: order.quantity,
-      delivered: order.delivered,
-      productPrice: order.productPrice,
-      paymentMethod: order.paymentMethod,
-      status: order.status,
-      image: order.image,
-      totalPrice: subtotal,
-    }));
+      orderedDate: Date.now(),
+      dateToBeDelivered: new Date(),
+      status: "Approved",
+      paymentMethod: "Payment on Delivery",
+    };
 
-    await adminordersmodel.insertMany(adminOrders);
+    await adminordersmodel.create(packedOrder);
+
+    user.orders = [];
+    await user.save();
 
     return res
       .status(200)
-      .json({ message: "Orders approved and copied successfully!" });
+      .json({ message: "Orders packed, approved, and cleared successfully!" });
   } catch (error) {
-    console.error("Error approving and copying orders:", error);
+    console.error("Error approving, packing, and clearing orders:", error);
     return res
       .status(500)
       .json({ message: "An error occurred", error: error.message });
@@ -327,5 +322,5 @@ module.exports = {
   getProductData,
   addproduct,
   updateCartInDatabase,
-  approveAndCopyOrders,
+  approveAndPackOrders,
 };

@@ -9,13 +9,13 @@ const {
   editproduct,
   getProductData,
   addproduct,
-  approveAndCopyOrders,
+  approveAndPackOrders,
 } = require("../Controller/admin.contoller");
 
 router.get("/user/getproducts", getProducts);
 router.delete("/delete/:productId", deleteProduct);
 router.get("/product/:productId", getProductData);
-router.post("/makeOrder", approveAndCopyOrders);
+router.post("/makeOrder", approveAndPackOrders);
 router.post("/updatecart", addproduct);
 router.post("/edit/:productId", upload.single("image"), editproduct);
 

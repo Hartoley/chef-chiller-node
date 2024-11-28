@@ -65,18 +65,10 @@ const OrderSchema = new mongoose.Schema({
 });
 
 const historySchema = new mongoose.Schema({
-  image: { type: String, required: true },
-  productId: { type: String, required: true },
-  productName: { type: String, required: true },
-  paid: { type: Boolean, default: true },
-  orderedDate: { type: Date, default: Date.now },
-  dateDelivered: { type: Date },
-  transactionId: { type: String },
-  quantity: { type: Number },
-  delivered: { type: Boolean, default: false },
-  productPrice: { type: Number, required: true },
-  paymentMethod: { type: String, default: "Payment on Delivery" },
-  status: { type: String, default: "Delivered" },
+  products: { type: Object, required: true },
+  userId: { type: String, required: true },
+  Total: { type: Number, required: true },
+  paymentImage: { type: String },
 });
 
 const UserSchema = new mongoose.Schema({
