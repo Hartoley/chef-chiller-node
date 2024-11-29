@@ -68,6 +68,10 @@ eventEmitter.on("projectDeleted", (deletedProject) => {
   io.emit("projectDeleted", deletedProject);
 });
 
+eventEmitter.on("ordersRetrieved", (data) => {
+  io.emit("ordersRetrieved", data);
+});
+
 // Database connection
 const connect = async () => {
   try {

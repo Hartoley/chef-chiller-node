@@ -357,6 +357,7 @@ const uploadPaymentImage = async (req, res) => {
 
 const getOrdersByUserId = async (req, res) => {
   const { userId } = req.params;
+  console.log(userId);
 
   try {
     const query = userId ? { userId } : {};
@@ -367,6 +368,7 @@ const getOrdersByUserId = async (req, res) => {
     }
 
     eventEmitter.emit({ message: "Orders retrieved successfully.", orders });
+    console.log(orders);
   } catch (error) {
     console.error("Error retrieving orders for admin:", error);
     return res
