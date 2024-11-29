@@ -260,9 +260,33 @@ const approveAndPackOrders = async (req, res) => {
     const existingOrder = await adminordersmodel.findOne({ userId });
 
     if (existingOrder) {
-      // If the user already has an order, check each new product
+      // If the order's status is "Payment Pending", create a new order
+      if (existingOrder.status === "Payment Pending") {
+        // Create a new order with the packed products
+        const newOrder = {
+          userId: user._id,
+          products: packedOrder.products,
+          status: "Approved",
+          orderedDate: Date.now(),
+          dateToBeDelivered: new Date(),
+          paymentMethod: "Payment on Delivery",
+        };
+
+        await adminordersmodel.create(newOrder);
+
+        // Clear the user's orders after processing
+        user.orders = [];
+        await user.save();
+
+        return res.status(200).json({
+          message:
+            "New order created successfully, previous order was in Payment Pending.",
+        });
+      }
+
+      // If the order's status is not "Payment Pending" or "Approved", update the order
       packedOrder.products.forEach((newProduct) => {
-        // Check if the product already exists in the order
+        // Find if the product exists in the existing order
         const existingProduct = existingOrder.products.find(
           (product) =>
             product.productId.toString() === newProduct.productId.toString()
@@ -279,6 +303,10 @@ const approveAndPackOrders = async (req, res) => {
 
       // Save the updated order
       await existingOrder.save();
+
+      // Always clear the user's orders after processing
+      user.orders = [];
+      await user.save();
 
       return res.status(200).json({
         message:
@@ -297,7 +325,8 @@ const approveAndPackOrders = async (req, res) => {
 
       await adminordersmodel.create(newOrder);
 
-      user.orders = []; // Clear the user's orders after processing
+      // Clear the user's orders after processing
+      user.orders = [];
       await user.save();
 
       return res.status(200).json({
