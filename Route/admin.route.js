@@ -10,6 +10,7 @@ const {
   getProductData,
   addproduct,
   approveAndPackOrders,
+  getOrdersByUserId,
 } = require("../Controller/admin.contoller");
 
 router.get("/user/getproducts", getProducts);
@@ -18,6 +19,7 @@ router.get("/product/:productId", getProductData);
 router.post("/makeOrder", approveAndPackOrders);
 router.post("/updatecart", addproduct);
 router.post("/edit/:productId", upload.single("image"), editproduct);
+router.get("/getmyorders/:userId", getOrdersByUserId);
 
 router.post("/upload", upload.single("image"), uploadProduct);
 

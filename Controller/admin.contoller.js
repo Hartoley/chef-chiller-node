@@ -268,6 +268,28 @@ const approveAndPackOrders = async (req, res) => {
   }
 };
 
+const getOrdersByUserId = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const query = userId ? { userId } : {};
+    const orders = await adminordersmodel.find(query).sort({ orderedDate: -1 });
+
+    if (orders.length === 0) {
+      return res.status(200).json({ message: "No orders found." });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Orders retrieved successfully.", orders });
+  } catch (error) {
+    console.error("Error retrieving orders for admin:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
+};
+
 const getProductData = async (req, res) => {
   try {
     const product = req.params.productId;
@@ -323,4 +345,5 @@ module.exports = {
   addproduct,
   updateCartInDatabase,
   approveAndPackOrders,
+  getOrdersByUserId,
 };
