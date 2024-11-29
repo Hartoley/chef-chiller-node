@@ -342,7 +342,7 @@ const uploadPaymentImage = async (req, res) => {
 
     await order.save();
 
-    return res.status(200).json({
+    eventEmitter.emit({
       message:
         "Payment image uploaded to Cloudinary and order updated successfully!",
       paymentImage: order.paymentImage, // Return Cloudinary URL
@@ -366,9 +366,7 @@ const getOrdersByUserId = async (req, res) => {
       return res.status(200).json({ message: "No orders found." });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Orders retrieved successfully.", orders });
+    eventEmitter.emit({ message: "Orders retrieved successfully.", orders });
   } catch (error) {
     console.error("Error retrieving orders for admin:", error);
     return res

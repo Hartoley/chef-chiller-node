@@ -58,6 +58,16 @@ io.on("connection", (socket) => {
   });
 });
 
+eventEmitter.on("newProject", (project) => {
+  console.log("Broadcasting new project to all clients:", project);
+  io.emit("newProject", project);
+});
+
+eventEmitter.on("projectDeleted", (deletedProject) => {
+  console.log("Broadcasting project deletion to all clients:", deletedProject);
+  io.emit("projectDeleted", deletedProject);
+});
+
 // Database connection
 const connect = async () => {
   try {
