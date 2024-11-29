@@ -70,6 +70,7 @@ eventEmitter.on("projectDeleted", (deletedProject) => {
 
 eventEmitter.on("ordersRetrieved", (data) => {
   io.emit("ordersRetrieved", data);
+  console.log("Received 'ordersFetched' event with data:", data);
 });
 
 // Database connection

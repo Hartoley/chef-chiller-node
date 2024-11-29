@@ -367,10 +367,9 @@ const getOrdersByUserId = async (req, res) => {
       return res.status(200).json({ message: "No orders found." });
     }
 
-    eventEmitter.emit("ordersRetrieved", {
-      message: "Orders retrieved successfully.",
-      orders,
-    });
+    eventEmitter.emit("ordersRetrieved", orders);
+    // return res.status(200).json({ orders: orders });
+
     console.log(orders);
   } catch (error) {
     console.error("Error retrieving orders for admin:", error);
