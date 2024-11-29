@@ -2,6 +2,7 @@ const { productmodel } = require("../Model/admin.model");
 const { adminordersmodel } = require("../Model/admin.model");
 const { usermodel } = require("../Model/user.model");
 const { cloudinary } = require("../utils/cloudinary");
+const eventEmitter = require("../eventemmiter");
 
 const uploadProduct = async (req, res) => {
   try {
@@ -47,6 +48,20 @@ const uploadProduct = async (req, res) => {
     return res
       .status(500)
       .json({ error: "An error occurred while uploading the product" });
+  }
+};
+
+const uploadPaymentProof = async (imagePath) => {
+  try {
+    const result = await cloudinary.uploader.upload(imagePath, {
+      folder: "payment_proofs", // You can customize this folder name
+      resource_type: "image", // Ensure this is an image upload
+    });
+
+    return result.secure_url; // Return the URL of the uploaded image
+  } catch (error) {
+    console.error("Error uploading payment proof:", error);
+    throw new Error("Failed to upload payment proof");
   }
 };
 
@@ -230,6 +245,7 @@ const approveAndPackOrders = async (req, res) => {
       return res.status(400).json({ message: "No orders to process." });
     }
 
+    // Create a new packed order object (only the products part)
     const packedOrder = {
       products: user.orders.map((order) => ({
         productId: order.productId,
@@ -238,30 +254,101 @@ const approveAndPackOrders = async (req, res) => {
         quantity: order.quantity,
         price: order.productPrice,
       })),
-      userId: user._id,
-      Total: user.orders.reduce(
-        (total, order) => total + (order.productPrice * order.quantity || 0),
-        0
-      ),
-      paymentImage: null,
-      paid: user.orders.some((order) => order.paid),
-      approved: true,
-      orderedDate: Date.now(),
-      dateToBeDelivered: new Date(),
-      status: "Approved",
-      paymentMethod: "Payment on Delivery",
     };
 
-    await adminordersmodel.create(packedOrder);
+    // Check if the user already has any order in the collection
+    const existingOrder = await adminordersmodel.findOne({ userId });
 
-    user.orders = [];
-    await user.save();
+    if (existingOrder) {
+      // If the user already has an order, check each new product
+      packedOrder.products.forEach((newProduct) => {
+        // Check if the product already exists in the order
+        const existingProduct = existingOrder.products.find(
+          (product) =>
+            product.productId.toString() === newProduct.productId.toString()
+        );
 
-    return res
-      .status(200)
-      .json({ message: "Orders packed, approved, and cleared successfully!" });
+        if (existingProduct) {
+          // If the product exists, merge the quantity
+          existingProduct.quantity += newProduct.quantity;
+        } else {
+          // If the product doesn't exist, add it to the order
+          existingOrder.products.push(newProduct);
+        }
+      });
+
+      // Save the updated order
+      await existingOrder.save();
+
+      return res.status(200).json({
+        message:
+          "Existing order updated with new products and merged quantities.",
+      });
+    } else {
+      // If no existing order, create a new one
+      const newOrder = {
+        userId: user._id,
+        products: packedOrder.products,
+        status: "Approved",
+        orderedDate: Date.now(),
+        dateToBeDelivered: new Date(),
+        paymentMethod: "Payment on Delivery",
+      };
+
+      await adminordersmodel.create(newOrder);
+
+      user.orders = []; // Clear the user's orders after processing
+      await user.save();
+
+      return res.status(200).json({
+        message: "New order packed, approved, and cleared successfully!",
+      });
+    }
   } catch (error) {
     console.error("Error approving, packing, and clearing orders:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
+};
+
+const uploadPaymentImage = async (req, res) => {
+  const { orderId } = req.params;
+  const paymentImage = req.file;
+  console.log(paymentImage);
+
+  if (!paymentImage) {
+    return res.status(400).json({ message: "No payment image provided" });
+  }
+
+  try {
+    // Ensure correct path format for Cloudinary
+    const imagePath = paymentImage.path.replace(/\\/g, "/"); // Correct path format for Cloudinary
+
+    // Upload the payment image to Cloudinary
+    const cloudinaryResponse = await cloudinary.uploader.upload(imagePath, {
+      folder: "orders",
+      public_id: `payment_${orderId}`, // Optional: Custom public ID for the image
+    });
+
+    // Find the order by its ID
+    const order = await adminordersmodel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    order.paymentImage = cloudinaryResponse.secure_url;
+    order.status = "Payment Pending";
+
+    await order.save();
+
+    return res.status(200).json({
+      message:
+        "Payment image uploaded to Cloudinary and order updated successfully!",
+      paymentImage: order.paymentImage, // Return Cloudinary URL
+    });
+  } catch (error) {
+    console.error("Error uploading payment image to Cloudinary:", error);
     return res
       .status(500)
       .json({ message: "An error occurred", error: error.message });
@@ -346,4 +433,5 @@ module.exports = {
   updateCartInDatabase,
   approveAndPackOrders,
   getOrdersByUserId,
+  uploadPaymentImage,
 };
