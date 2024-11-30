@@ -78,7 +78,11 @@ eventEmitter.on("userFound", (data) => {
   // console.log("Received 'user' event with data:", data);
 });
 
-// Database connection
+eventEmitter.on("ordersUpdated", (data) => {
+  io.emit("ordersUpdated", data); // Emit to all connected clients
+  console.log("ordersUpdated event emitted:", data);
+});
+
 const connect = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);

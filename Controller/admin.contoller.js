@@ -227,6 +227,7 @@ const addproduct = async (req, res) => {
 
     await user.save();
     res.status(200).json({ message: "Cart updated successfully" });
+    eventEmitter.emit("ordersUpdated", { userId, orders: user.orders });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -304,7 +305,7 @@ const approveAndPackOrders = async (req, res) => {
       // Save the updated order
       await existingOrder.save();
 
-      // Always clear the user's orders after processing
+      // Clear the user's orders after processing
       user.orders = [];
       await user.save();
 
@@ -323,9 +324,10 @@ const approveAndPackOrders = async (req, res) => {
         paymentMethod: "Payment on Delivery",
       };
 
+      // Create the new order
       await adminordersmodel.create(newOrder);
 
-      // Clear the user's orders after processing
+      // Clear the user's orders after the new order is created
       user.orders = [];
       await user.save();
 
