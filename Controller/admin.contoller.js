@@ -267,6 +267,7 @@ const approveAndPackOrders = async (req, res) => {
         existingOrder.status === "Payment Pending" ||
         existingOrder.status === "Seen"
       ) {
+        // If the existing order is in "Payment Pending" or "Seen", create a new order
         const newOrder = {
           userId: user._id,
           products: packedOrder.products,
@@ -278,6 +279,7 @@ const approveAndPackOrders = async (req, res) => {
 
         await adminordersmodel.create(newOrder);
 
+        // Clear the user's orders after processing
         user.orders = [];
         await user.save();
 
@@ -287,7 +289,9 @@ const approveAndPackOrders = async (req, res) => {
         });
       }
 
-      // Update or add new products
+      // Update or add new products to the existing order
+      let updated = false;
+
       packedOrder.products.forEach((newProduct) => {
         const existingProduct = existingOrder.products.find(
           (product) =>
@@ -296,22 +300,33 @@ const approveAndPackOrders = async (req, res) => {
 
         if (existingProduct) {
           existingProduct.quantity += Number(newProduct.quantity);
+          updated = true;
         } else {
           existingOrder.products.push(newProduct);
+          updated = true;
         }
       });
 
-      // Save the updated order
-      await existingOrder.save();
+      if (updated) {
+        // Log updated products to verify changes
+        console.log("Updated existing order products:", existingOrder.products);
 
-      // Clear the user's orders after processing
-      user.orders = [];
-      await user.save();
+        // Save the updated order
+        await existingOrder.save();
 
-      return res.status(200).json({
-        message:
-          "Existing order updated with new products and merged quantities.",
-      });
+        // Clear the user's orders after processing
+        user.orders = [];
+        await user.save();
+
+        return res.status(200).json({
+          message:
+            "Existing order updated with new products and merged quantities.",
+        });
+      } else {
+        return res.status(400).json({
+          message: "No new products to add to the existing order.",
+        });
+      }
     } else {
       // If no existing order, create a new one
       const newOrder = {
