@@ -227,7 +227,11 @@ const addproduct = async (req, res) => {
 
     await user.save();
     res.status(200).json({ message: "Cart updated successfully" });
-    eventEmitter.emit("ordersUpdated", { userId, orders: user.orders });
+    eventEmitter.emit("ordersUpdated", {
+      userId,
+      orders: user.orders,
+      user: user,
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
