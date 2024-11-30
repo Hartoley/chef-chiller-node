@@ -4,7 +4,7 @@ const { string } = require("yup");
 const AdminOrderSchema = new mongoose.Schema({
   products: { type: Object, required: true },
   userId: { type: String, required: true },
-  Total: { type: Number, required: true },
+  Total: { type: Number },
   paid: { type: Boolean, default: false },
   approved: { type: Boolean, default: false },
   orderedDate: { type: Date, default: Date.now },
