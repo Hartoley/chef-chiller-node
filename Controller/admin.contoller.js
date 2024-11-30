@@ -250,7 +250,6 @@ const approveAndPackOrders = async (req, res) => {
       return res.status(400).json({ message: "No orders to process." });
     }
 
-    // Create a new packed order object (only the products part)
     const packedOrder = {
       products: user.orders.map((order) => ({
         productId: order.productId,
@@ -261,13 +260,13 @@ const approveAndPackOrders = async (req, res) => {
       })),
     };
 
-    // Check if the user already has any order in the collection
     const existingOrder = await adminordersmodel.findOne({ userId });
 
     if (existingOrder) {
-      // If the order's status is "Payment Pending", create a new order
-      if (existingOrder.status === "Payment Pending") {
-        // Create a new order with the packed products
+      if (
+        existingOrder.status === "Payment Pending" ||
+        existingOrder.status === "Seen"
+      ) {
         const newOrder = {
           userId: user._id,
           products: packedOrder.products,
@@ -279,7 +278,6 @@ const approveAndPackOrders = async (req, res) => {
 
         await adminordersmodel.create(newOrder);
 
-        // Clear the user's orders after processing
         user.orders = [];
         await user.save();
 
@@ -289,19 +287,16 @@ const approveAndPackOrders = async (req, res) => {
         });
       }
 
-      // If the order's status is not "Payment Pending" or "Approved", update the order
+      // Update or add new products
       packedOrder.products.forEach((newProduct) => {
-        // Find if the product exists in the existing order
         const existingProduct = existingOrder.products.find(
           (product) =>
             product.productId.toString() === newProduct.productId.toString()
         );
 
         if (existingProduct) {
-          // If the product exists, merge the quantity
-          existingProduct.quantity += newProduct.quantity;
+          existingProduct.quantity += Number(newProduct.quantity);
         } else {
-          // If the product doesn't exist, add it to the order
           existingOrder.products.push(newProduct);
         }
       });
