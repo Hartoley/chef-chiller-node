@@ -243,7 +243,7 @@ const approveAndPackOrders = async (req, res) => {
   try {
     const user = await usermodel.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User  not found" });
     }
 
     if (user.orders.length === 0) {
@@ -263,11 +263,54 @@ const approveAndPackOrders = async (req, res) => {
     const existingOrder = await adminordersmodel.findOne({ userId });
 
     if (existingOrder) {
+      console.log("Existing Order Status:", existingOrder.status);
+
+      // Check if the existing order is not "Payment Pending" or "Seen"
       if (
-        existingOrder.status === "Payment Pending" ||
-        existingOrder.status === "Seen"
+        existingOrder.status !== "Payment Pending" &&
+        existingOrder.status !== "Seen"
       ) {
-        // If the existing order is in "Payment Pending" or "Seen", create a new order
+        let updated = false;
+
+        packedOrder.products.forEach((newProduct) => {
+          const existingProduct = existingOrder.products.find(
+            (product) =>
+              product.productId.toString() === newProduct.productId.toString()
+          );
+
+          if (existingProduct) {
+            // If the product exists, update the quantity
+            existingProduct.quantity += Number(newProduct.quantity);
+            updated = true;
+          } else {
+            // If the product does not exist, add it to the order
+            existingOrder.products.push(newProduct);
+            updated = true;
+          }
+        });
+
+        if (updated) {
+          console.log(
+            "Updated existing order products:",
+            existingOrder.products
+          );
+          await existingOrder.save();
+
+          // Clear the user's orders after processing
+          user.orders = [];
+          await user.save();
+
+          return res.status(200).json({
+            message:
+              "Existing order updated with new products and merged quantities.",
+          });
+        } else {
+          return res.status(400).json({
+            message: "No new products to add to the existing order.",
+          });
+        }
+      } else {
+        // If the existing order is "Payment Pending" or "Seen", create a new order
         const newOrder = {
           userId: user._id,
           products: packedOrder.products,
@@ -285,46 +328,7 @@ const approveAndPackOrders = async (req, res) => {
 
         return res.status(200).json({
           message:
-            "New order created successfully, previous order was in Payment Pending.",
-        });
-      }
-
-      // Update or add new products to the existing order
-      let updated = false;
-
-      packedOrder.products.forEach((newProduct) => {
-        const existingProduct = existingOrder.products.find(
-          (product) =>
-            product.productId.toString() === newProduct.productId.toString()
-        );
-
-        if (existingProduct) {
-          existingProduct.quantity += Number(newProduct.quantity);
-          updated = true;
-        } else {
-          existingOrder.products.push(newProduct);
-          updated = true;
-        }
-      });
-
-      if (updated) {
-        // Log updated products to verify changes
-        console.log("Updated existing order products:", existingOrder.products);
-
-        // Save the updated order
-        await existingOrder.save();
-
-        // Clear the user's orders after processing
-        user.orders = [];
-        await user.save();
-
-        return res.status(200).json({
-          message:
-            "Existing order updated with new products and merged quantities.",
-        });
-      } else {
-        return res.status(400).json({
-          message: "No new products to add to the existing order.",
+            "New order created successfully, previous order was in Payment Pending or Seen.",
         });
       }
     } else {
