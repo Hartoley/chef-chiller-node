@@ -13,6 +13,7 @@ const {
   getOrdersByUserId,
   uploadPaymentImage,
   getAllOrders,
+  approveOrder,
 } = require("../Controller/admin.contoller");
 
 router.get("/user/getproducts", getProducts);
@@ -28,6 +29,7 @@ router.post(
 );
 router.post("/edit/:productId", upload.single("image"), editproduct);
 router.get("/getmyorders/:userId", getOrdersByUserId);
+router.post("/approveorders/:orderId", approveOrder);
 
 router.post("/upload", upload.single("image"), uploadProduct);
 

@@ -455,6 +455,38 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+const approveOrder = async (req, res) => {
+  const { orderId } = req.params;
+  console.log(`Approving order with ID: ${orderId}`);
+
+  try {
+    const updatedOrder = await adminordersmodel.findByIdAndUpdate(
+      orderId,
+      { status: "Payment Approved" },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      console.error(`Order with ID: ${orderId} not found.`);
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    console.log(`Order approved successfully:`, updatedOrder);
+
+    eventEmitter.emit("orderApproved", updatedOrder);
+
+    return res
+      .status(200)
+      .json({ message: "Order approved successfully.", order: updatedOrder });
+  } catch (error) {
+    console.error("Error approving order:", error);
+    return res.status(500).json({
+      message: "An error occurred while approving the order.",
+      error: error.message,
+    });
+  }
+};
+
 const getProductData = async (req, res) => {
   try {
     const product = req.params.productId;
@@ -513,4 +545,5 @@ module.exports = {
   getOrdersByUserId,
   uploadPaymentImage,
   getAllOrders,
+  approveOrder,
 };
