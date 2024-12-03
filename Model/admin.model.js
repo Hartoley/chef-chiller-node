@@ -2,7 +2,15 @@ const mongoose = require("mongoose");
 const { string } = require("yup");
 
 const AdminOrderSchema = new mongoose.Schema({
-  products: { type: Object, required: true },
+  products: [
+    {
+      productId: { type: String, required: true },
+      productName: { type: String, required: true },
+      image: { type: String, required: true },
+      quantity: { type: Number, required: true },
+      price: { type: Number, required: true },
+    },
+  ],
   userId: { type: String, required: true },
   Total: { type: Number },
   paid: { type: Boolean, default: false },

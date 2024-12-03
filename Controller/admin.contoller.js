@@ -239,7 +239,6 @@ const addproduct = async (req, res) => {
 
 const approveAndPackOrders = async (req, res) => {
   const { userId } = req.body;
-
   try {
     const user = await usermodel.findById(userId);
     if (!user) {
@@ -260,104 +259,110 @@ const approveAndPackOrders = async (req, res) => {
       })),
     };
 
+    console.log("Packed Order for Update:", packedOrder);
+
+    for (const product of packedOrder.products) {
+      if (
+        !product.productId ||
+        !product.productName ||
+        !product.image ||
+        !product.price
+      ) {
+        console.error("Missing required fields in packedOrder:", product);
+        return res
+          .status(400)
+          .json({ message: "Missing required fields in products." });
+      }
+    }
+
     const existingOrder = await adminordersmodel.findOne({ userId });
 
     if (existingOrder) {
       console.log("Existing Order Status:", existingOrder.status);
 
-      // Check if the existing order is not "Payment Pending" or "Seen"
-      if (
-        existingOrder.status !== "Payment Pending" &&
-        existingOrder.status !== "Seen"
-      ) {
-        let updated = false;
+      let updated = false;
 
-        packedOrder.products.forEach((newProduct) => {
-          const existingProduct = existingOrder.products.find(
-            (product) =>
-              product.productId.toString() === newProduct.productId.toString()
-          );
+      packedOrder.products.forEach((newProduct) => {
+        const existingProduct = existingOrder.products.find(
+          (product) =>
+            product.productId.toString() === newProduct.productId.toString()
+        );
 
-          if (existingProduct) {
-            // If the product exists, update the quantity
-            existingProduct.quantity += Number(newProduct.quantity);
-            updated = true;
-          } else {
-            // If the product does not exist, add it to the order
-            existingOrder.products.push(newProduct);
-            updated = true;
-          }
-        });
+        if (existingProduct) {
+          existingProduct.quantity += Number(newProduct.quantity);
+          existingOrder.markModified("products");
+          updated = true;
+        } else {
+          existingOrder.products.push(newProduct);
+          existingOrder.markModified("products");
+          updated = true;
+        }
+      });
 
-        if (updated) {
+      if (updated) {
+        console.log("Updated existing order products:", existingOrder.products);
+        try {
           console.log(
-            "Updated existing order products:",
-            existingOrder.products
+            "Existing Order before save:",
+            JSON.stringify(existingOrder, null, 2)
           );
-          await existingOrder.save();
+          const savedOrder = await existingOrder.save();
+          console.log("Order saved successfully:", savedOrder);
 
-          // Clear the user's orders after processing
           user.orders = [];
           await user.save();
 
           return res.status(200).json({
-            message:
-              "Existing order updated with new products and merged quantities.",
+            message: "Order updated successfully.",
+            order: savedOrder,
           });
-        } else {
-          return res.status(400).json({
-            message: "No new products to add to the existing order.",
-          });
+        } catch (error) {
+          console.error("Error saving order:", error);
+          return res
+            .status(500)
+            .json({ message: "Failed to save order.", error: error.message });
         }
       } else {
-        // If the existing order is "Payment Pending" or "Seen", create a new order
-        const newOrder = {
-          userId: user._id,
-          products: packedOrder.products,
-          status: "Approved",
-          orderedDate: Date.now(),
-          dateToBeDelivered: new Date(),
-          paymentMethod: "Payment on Delivery",
-        };
+        return res
+          .status(400)
+          .json({ message: "No updates were made to the order." });
+      }
+    } else {
+      const newOrder = new adminordersmodel({
+        userId,
+        products: packedOrder.products,
+        Total: packedOrder.products.reduce(
+          (acc, product) => acc + product.price * product.quantity,
+          0
+        ),
+        status: "Pending",
+      });
 
-        await adminordersmodel.create(newOrder);
+      try {
+        const savedOrder = await newOrder.save();
+        console.log("New order created successfully:", savedOrder);
 
-        // Clear the user's orders after processing
         user.orders = [];
         await user.save();
 
-        return res.status(200).json({
-          message:
-            "New order created successfully, previous order was in Payment Pending or Seen.",
+        return res.status(201).json({
+          message: "New order created successfully.",
+          order: savedOrder,
+        });
+      } catch (error) {
+        console.error("Error creating new order:", error);
+        return res.status(500).json({
+          message: "Failed to create new order.",
+          error: error.message,
         });
       }
-    } else {
-      // If no existing order, create a new one
-      const newOrder = {
-        userId: user._id,
-        products: packedOrder.products,
-        status: "Approved",
-        orderedDate: Date.now(),
-        dateToBeDelivered: new Date(),
-        paymentMethod: "Payment on Delivery",
-      };
-
-      // Create the new order
-      await adminordersmodel.create(newOrder);
-
-      // Clear the user's orders after the new order is created
-      user.orders = [];
-      await user.save();
-
-      return res.status(200).json({
-        message: "New order packed, approved, and cleared successfully!",
-      });
     }
   } catch (error) {
-    console.error("Error approving, packing, and clearing orders:", error);
-    return res
-      .status(500)
-      .json({ message: "An error occurred", error: error.message });
+    console.error("Error processing orders:", error);
+    return res.status(500).json({
+      message: "An error occurred while processing orders.",
+      error: error.message,
+    });
   }
 };
 
