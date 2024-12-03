@@ -436,6 +436,25 @@ const getOrdersByUserId = async (req, res) => {
   }
 };
 
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await adminordersmodel.find().sort({ orderedDate: -1 });
+
+    if (orders.length === 0) {
+      return res.status(200).json({ message: "No orders found." });
+    }
+
+    eventEmitter.emit("ordersRetrievedByAdmin", orders);
+
+    return res.status(200).json({ orders });
+  } catch (error) {
+    console.error("Error retrieving orders for admin:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
+};
+
 const getProductData = async (req, res) => {
   try {
     const product = req.params.productId;
@@ -493,4 +512,5 @@ module.exports = {
   approveAndPackOrders,
   getOrdersByUserId,
   uploadPaymentImage,
+  getAllOrders,
 };

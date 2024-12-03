@@ -68,6 +68,11 @@ eventEmitter.on("projectDeleted", (deletedProject) => {
   io.emit("projectDeleted", deletedProject);
 });
 
+eventEmitter.on("ordersRetrievedByAdmin", (data) => {
+  io.emit("ordersRetrievedByAdmin", data);
+  console.log("Received 'ordersFetched' event with data:", data);
+});
+
 eventEmitter.on("ordersRetrieved", (data) => {
   io.emit("ordersRetrieved", data);
   console.log("Received 'ordersFetched' event with data:", data);

@@ -12,11 +12,13 @@ const {
   approveAndPackOrders,
   getOrdersByUserId,
   uploadPaymentImage,
+  getAllOrders,
 } = require("../Controller/admin.contoller");
 
 router.get("/user/getproducts", getProducts);
 router.delete("/delete/:productId", deleteProduct);
 router.get("/product/:productId", getProductData);
+router.get("/admingetorders", getAllOrders);
 router.post("/makeOrder", approveAndPackOrders);
 router.post("/updatecart", addproduct);
 router.post(
