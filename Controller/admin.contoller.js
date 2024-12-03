@@ -311,7 +311,10 @@ const approveAndPackOrders = async (req, res) => {
 
           user.orders = [];
           await user.save();
-
+          eventEmitter.emit("orderApproved", {
+            order: savedOrder,
+            user: user,
+          });
           return res.status(200).json({
             message: "Order updated successfully.",
             order: savedOrder,
@@ -399,7 +402,7 @@ const uploadPaymentImage = async (req, res) => {
     eventEmitter.emit({
       message:
         "Payment image uploaded to Cloudinary and order updated successfully!",
-      paymentImage: order.paymentImage, // Return Cloudinary URL
+      paymentImage: order.paymentImage,
     });
   } catch (error) {
     console.error("Error uploading payment image to Cloudinary:", error);
