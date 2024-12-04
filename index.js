@@ -78,6 +78,10 @@ eventEmitter.on("ordersRetrieved", (data) => {
   console.log("Received 'ordersFetched' event with data:", data);
 });
 
+eventEmitter.on("orderApproved", (data) => {
+  io.emit("orderApproved", data);
+});
+
 eventEmitter.on("userFound", (data) => {
   io.emit("userFound", data);
 });
