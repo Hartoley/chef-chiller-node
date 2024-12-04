@@ -239,7 +239,6 @@ const addproduct = async (req, res) => {
 
 const approveAndPackOrders = async (req, res) => {
   const { userId } = req.body;
-
   try {
     const user = await usermodel.findById(userId);
     if (!user) {
@@ -260,75 +259,44 @@ const approveAndPackOrders = async (req, res) => {
       })),
     };
 
-    console.log("Packed Order for Update:", packedOrder);
-
-    for (const product of packedOrder.products) {
-      if (
-        !product.productId ||
-        !product.productName ||
-        !product.image ||
-        !product.price
-      ) {
-        console.error("Missing required fields in packedOrder:", product);
-        return res
-          .status(400)
-          .json({ message: "Missing required fields in products." });
-      }
-    }
-
     const existingOrder = await adminordersmodel.findOne({ userId });
 
+    // Check the status and create a new collection if required
+    if (
+      existingOrder &&
+      ["Payment Approved", "Payment Declined", "Payment Pending"].includes(
+        existingOrder.status
+      )
+    ) {
+      console.log(
+        `Existing order has status "${existingOrder.status}". Creating a new collection.`
+      );
+
+      const newCollectionOrder = new adminordersmodel({
+        userId,
+        products: packedOrder.products,
+        Total: packedOrder.products.reduce(
+          (acc, product) => acc + product.price * product.quantity,
+          0
+        ),
+        status: "Pending", // Default status for new orders
+      });
+
+      const savedNewOrder = await newCollectionOrder.save();
+      console.log("New collection order created successfully:", savedNewOrder);
+
+      // Clear the user's orders
+      user.orders = [];
+      await user.save();
+
+      return res.status(201).json({
+        message: "New collection order created successfully.",
+        order: savedNewOrder,
+      });
+    }
+
+    // Process order normally if no existing order with the mentioned statuses
     if (existingOrder) {
-      // Check if the existing order has a specific status
-      if (
-        ["Payment Pending", "Payment Approved", "Payment Declined"].includes(
-          existingOrder.status
-        )
-      ) {
-        console.log(
-          `Existing order has status "${existingOrder.status}". Creating a new collection.`
-        );
-
-        // Create a new order in a separate collection
-        const newCollectionOrder = new otherOrdersModel({
-          userId,
-          products: packedOrder.products,
-          Total: packedOrder.products.reduce(
-            (acc, product) => acc + product.price * product.quantity,
-            0
-          ),
-          status: "Pending",
-        });
-
-        try {
-          const savedNewCollectionOrder = await newCollectionOrder.save();
-          console.log(
-            "New order created successfully in separate collection:",
-            savedNewCollectionOrder
-          );
-
-          user.orders = [];
-          await user.save();
-
-          return res.status(201).json({
-            message: "New order created successfully in separate collection.",
-            order: savedNewCollectionOrder,
-          });
-        } catch (error) {
-          console.error(
-            "Error creating new order in separate collection:",
-            error
-          );
-          return res.status(500).json({
-            message: "Failed to create new order in separate collection.",
-            error: error.message,
-          });
-        }
-      }
-
-      // Existing order logic remains as is
-      let updated = false;
-
       packedOrder.products.forEach((newProduct) => {
         const existingProduct = existingOrder.products.find(
           (product) =>
@@ -338,68 +306,45 @@ const approveAndPackOrders = async (req, res) => {
         if (existingProduct) {
           existingProduct.quantity += Number(newProduct.quantity);
           existingOrder.markModified("products");
-          updated = true;
         } else {
           existingOrder.products.push(newProduct);
           existingOrder.markModified("products");
-          updated = true;
         }
       });
 
-      if (updated) {
-        console.log("Updated existing order products:", existingOrder.products);
-        try {
-          const savedOrder = await existingOrder.save();
-          console.log("Order saved successfully:", savedOrder);
+      const savedOrder = await existingOrder.save();
+      console.log("Order updated successfully:", savedOrder);
 
-          user.orders = [];
-          await user.save();
-          return res.status(200).json({
-            message: "Order updated successfully.",
-            order: savedOrder,
-          });
-        } catch (error) {
-          console.error("Error saving order:", error);
-          return res.status(500).json({
-            message: "Failed to save order.",
-            error: error.message,
-          });
-        }
-      } else {
-        return res
-          .status(400)
-          .json({ message: "No updates were made to the order." });
-      }
-    } else {
-      const newOrder = new adminordersmodel({
-        userId,
-        products: packedOrder.products,
-        Total: packedOrder.products.reduce(
-          (acc, product) => acc + product.price * product.quantity,
-          0
-        ),
-        status: "Pending",
+      user.orders = [];
+      await user.save();
+
+      return res.status(200).json({
+        message: "Order updated successfully.",
+        order: savedOrder,
       });
-
-      try {
-        const savedOrder = await newOrder.save();
-        console.log("New order created successfully:", savedOrder);
-
-        user.orders = [];
-        await user.save();
-
-        return res.status(201).json({
-          message: "New order created successfully.",
-          order: savedOrder,
-        });
-      } catch (error) {
-        console.error("Error creating new order:", error);
-        return res.status(500).json({
-          message: "Failed to create new order.",
-          error: error.message,
-        });
-      }
     }
+
+    // If no existing order, create a new one
+    const newOrder = new adminordersmodel({
+      userId,
+      products: packedOrder.products,
+      Total: packedOrder.products.reduce(
+        (acc, product) => acc + product.price * product.quantity,
+        0
+      ),
+      status: "Pending",
+    });
+
+    const savedOrder = await newOrder.save();
+    console.log("New order created successfully:", savedOrder);
+
+    user.orders = [];
+    await user.save();
+
+    return res.status(201).json({
+      message: "New order created successfully.",
+      order: savedOrder,
+    });
   } catch (error) {
     console.error("Error processing orders:", error);
     return res.status(500).json({
