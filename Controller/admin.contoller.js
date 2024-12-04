@@ -239,10 +239,11 @@ const addproduct = async (req, res) => {
 
 const approveAndPackOrders = async (req, res) => {
   const { userId } = req.body;
+
   try {
     const user = await usermodel.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User  not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     if (user.orders.length === 0) {
@@ -278,8 +279,54 @@ const approveAndPackOrders = async (req, res) => {
     const existingOrder = await adminordersmodel.findOne({ userId });
 
     if (existingOrder) {
-      console.log("Existing Order Status:", existingOrder.status);
+      // Check if the existing order has a specific status
+      if (
+        ["Payment Pending", "Payment Approved", "Payment Declined"].includes(
+          existingOrder.status
+        )
+      ) {
+        console.log(
+          `Existing order has status "${existingOrder.status}". Creating a new collection.`
+        );
 
+        // Create a new order in a separate collection
+        const newCollectionOrder = new otherOrdersModel({
+          userId,
+          products: packedOrder.products,
+          Total: packedOrder.products.reduce(
+            (acc, product) => acc + product.price * product.quantity,
+            0
+          ),
+          status: "Pending",
+        });
+
+        try {
+          const savedNewCollectionOrder = await newCollectionOrder.save();
+          console.log(
+            "New order created successfully in separate collection:",
+            savedNewCollectionOrder
+          );
+
+          user.orders = [];
+          await user.save();
+
+          return res.status(201).json({
+            message: "New order created successfully in separate collection.",
+            order: savedNewCollectionOrder,
+          });
+        } catch (error) {
+          console.error(
+            "Error creating new order in separate collection:",
+            error
+          );
+          return res.status(500).json({
+            message: "Failed to create new order in separate collection.",
+            error: error.message,
+          });
+        }
+      }
+
+      // Existing order logic remains as is
       let updated = false;
 
       packedOrder.products.forEach((newProduct) => {
@@ -302,28 +349,21 @@ const approveAndPackOrders = async (req, res) => {
       if (updated) {
         console.log("Updated existing order products:", existingOrder.products);
         try {
-          console.log(
-            "Existing Order before save:",
-            JSON.stringify(existingOrder, null, 2)
-          );
           const savedOrder = await existingOrder.save();
           console.log("Order saved successfully:", savedOrder);
 
           user.orders = [];
           await user.save();
-          eventEmitter.emit("orderApproved", {
-            order: savedOrder,
-            user: user,
-          });
           return res.status(200).json({
             message: "Order updated successfully.",
             order: savedOrder,
           });
         } catch (error) {
           console.error("Error saving order:", error);
-          return res
-            .status(500)
-            .json({ message: "Failed to save order.", error: error.message });
+          return res.status(500).json({
+            message: "Failed to save order.",
+            error: error.message,
+          });
         }
       } else {
         return res
