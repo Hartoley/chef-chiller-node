@@ -242,7 +242,7 @@ const approveAndPackOrders = async (req, res) => {
   try {
     const user = await usermodel.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User  not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     if (user.orders.length === 0) {
@@ -275,78 +275,47 @@ const approveAndPackOrders = async (req, res) => {
       }
     }
 
-    const existingOrder = await adminordersmodel.findOne({ userId });
+    // Check all orders for the user
+    const userOrders = await adminordersmodel.find({ userId });
 
-    if (
-      existingOrder &&
-      ["Payment Approved", "Payment Declined", "Payment Pending"].includes(
-        existingOrder.status
-      )
-    ) {
-      console.log(
-        `Existing order has status "${existingOrder.status}". Creating a new collection.`
-      );
+    // Find an order that doesn't have a restricted status
+    const updatableOrder = userOrders.find(
+      (order) =>
+        !["Payment Approved", "Payment Declined", "Payment Pending"].includes(
+          order.status
+        )
+    );
 
-      const newCollectionOrder = new adminordersmodel({
-        userId,
-        products: packedOrder.products,
-        Total: packedOrder.products.reduce(
-          (acc, product) => acc + product.price * product.quantity,
-          0
-        ),
-        status: "Pending",
-      });
-
-      const savedNewOrder = await newCollectionOrder.save();
-      console.log("New collection order created successfully:", savedNewOrder);
-
-      user.orders = [];
-      await user.save();
-
-      return res.status(201).json({
-        message: "New collection order created successfully.",
-        order: savedNewOrder,
-      });
-    }
-
-    if (existingOrder) {
-      console.log("Existing Order Status:", existingOrder.status);
+    if (updatableOrder) {
+      console.log("Updating existing order:", updatableOrder._id);
 
       let updated = false;
 
       packedOrder.products.forEach((newProduct) => {
-        const existingProduct = existingOrder.products.find(
+        const existingProduct = updatableOrder.products.find(
           (product) =>
             product.productId.toString() === newProduct.productId.toString()
         );
 
         if (existingProduct) {
           existingProduct.quantity += Number(newProduct.quantity);
-          existingOrder.markModified("products");
+          updatableOrder.markModified("products");
           updated = true;
         } else {
-          existingOrder.products.push(newProduct);
-          existingOrder.markModified("products");
+          updatableOrder.products.push(newProduct);
+          updatableOrder.markModified("products");
           updated = true;
         }
       });
 
       if (updated) {
-        console.log("Updated existing order products:", existingOrder.products);
         try {
-          console.log(
-            "Existing Order before save:",
-            JSON.stringify(existingOrder, null, 2)
-          );
-          const savedOrder = await existingOrder.save();
-          console.log("Order saved successfully:", savedOrder);
+          const savedOrder = await updatableOrder.save();
+          console.log("Order updated successfully:", savedOrder);
 
           user.orders = [];
           await user.save();
-          eventEmitter.emit("orderApproved", {
-            order: savedOrder,
-            user: user,
-          });
+
           return res.status(200).json({
             message: "Order updated successfully.",
             order: savedOrder,
@@ -363,6 +332,10 @@ const approveAndPackOrders = async (req, res) => {
           .json({ message: "No updates were made to the order." });
       }
     } else {
+      console.log(
+        "No suitable existing order found. Creating a new collection."
+      );
+
       const newOrder = new adminordersmodel({
         userId,
         products: packedOrder.products,
