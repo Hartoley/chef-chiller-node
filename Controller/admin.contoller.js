@@ -261,7 +261,7 @@ const approveAndPackOrders = async (req, res) => {
 
     const existingOrder = await adminordersmodel.findOne({ userId });
 
-    // Check the status and create a new collection if required
+    // If the existing order has specific statuses, create a new collection
     if (
       existingOrder &&
       ["Payment Approved", "Payment Declined", "Payment Pending"].includes(
@@ -285,7 +285,6 @@ const approveAndPackOrders = async (req, res) => {
       const savedNewOrder = await newCollectionOrder.save();
       console.log("New collection order created successfully:", savedNewOrder);
 
-      // Clear the user's orders
       user.orders = [];
       await user.save();
 
@@ -295,8 +294,10 @@ const approveAndPackOrders = async (req, res) => {
       });
     }
 
-    // Process order normally if no existing order with the mentioned statuses
+    // If no specific status, update quantities in the existing order
     if (existingOrder) {
+      console.log("Updating existing order...");
+
       packedOrder.products.forEach((newProduct) => {
         const existingProduct = existingOrder.products.find(
           (product) =>
@@ -305,12 +306,12 @@ const approveAndPackOrders = async (req, res) => {
 
         if (existingProduct) {
           existingProduct.quantity += Number(newProduct.quantity);
-          existingOrder.markModified("products");
         } else {
           existingOrder.products.push(newProduct);
-          existingOrder.markModified("products");
         }
       });
+
+      existingOrder.markModified("products");
 
       const savedOrder = await existingOrder.save();
       console.log("Order updated successfully:", savedOrder);
