@@ -78,8 +78,11 @@ eventEmitter.on("ordersRetrieved", (data) => {
   console.log("Received 'ordersFetched' event with data:", data);
 });
 
-eventEmitter.on("orderApproved", (data) => {
-  io.emit("orderApproved", data);
+eventEmitter.on("orderApprovedByAdmin", (data) => {
+  io.emit("orderApprovedByAdmin", data);
+});
+eventEmitter.on("orderDeclinedByAdmin", (data) => {
+  io.emit("orderDeclinedByAdmin", data);
 });
 
 eventEmitter.on("userFound", (data) => {
@@ -93,7 +96,6 @@ eventEmitter.on("ordersUpdated", (data) => {
 
 eventEmitter.on("orderApproved", (data) => {
   io.emit("orderApproved", data);
-  console.log("orderApproved event emitted:", data);
 });
 
 const connect = async () => {
