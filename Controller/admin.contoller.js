@@ -275,10 +275,8 @@ const approveAndPackOrders = async (req, res) => {
       }
     }
 
-    // Check all orders for the user
     const userOrders = await adminordersmodel.find({ userId });
 
-    // Find an order that doesn't have a restricted status
     const updatableOrder = userOrders.find(
       (order) =>
         !["Payment Approved", "Payment Declined", "Payment Pending"].includes(
@@ -316,6 +314,11 @@ const approveAndPackOrders = async (req, res) => {
           user.orders = [];
           await user.save();
 
+          eventEmitter.emit("orderApproved", {
+            order: savedOrder,
+            user: user,
+          });
+
           return res.status(200).json({
             message: "Order updated successfully.",
             order: savedOrder,
@@ -352,6 +355,11 @@ const approveAndPackOrders = async (req, res) => {
 
         user.orders = [];
         await user.save();
+
+        eventEmitter.emit("orderApproved", {
+          orders: savedOrder,
+          user: user,
+        });
 
         return res.status(201).json({
           message: "New order created successfully.",
@@ -459,6 +467,7 @@ const getAllOrders = async (req, res) => {
       .json({ message: "An error occurred", error: error.message });
   }
 };
+
 const DeclineOrder = async (req, res) => {
   const { orderId } = req.params;
   console.log(`Approving order with ID: ${orderId}`);
@@ -475,13 +484,13 @@ const DeclineOrder = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    console.log(`Order approved successfully:`, updatedOrder);
+    console.log(`Order declined successfully:`, updatedOrder);
 
     eventEmitter.emit("orderDeclinedByAdmin", updatedOrder);
 
     return res
       .status(200)
-      .json({ message: "Order approved successfully.", order: updatedOrder });
+      .json({ message: "Order declined successfully.", order: updatedOrder });
   } catch (error) {
     console.error("Error approving order:", error);
     return res.status(500).json({
