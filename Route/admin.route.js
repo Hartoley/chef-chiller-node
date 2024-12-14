@@ -34,6 +34,7 @@ router.get("/getmyorders/:userId", getOrdersByUserId);
 router.post("/approveorders/:orderId", approveOrder);
 router.post("/declineorders/:orderId", approveOrder);
 router.post("/approvedelivery/:orderId", approveOrderDelivery);
+router.post("/declinedelivery/:orderId", declineOrderDelivery);
 
 router.post("/upload", upload.single("image"), uploadProduct);
 router.post("/deleteOrder/:orderId", deleteOrder);
