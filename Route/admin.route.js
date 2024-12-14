@@ -16,6 +16,7 @@ const {
   approveOrder,
   approveOrderDelivery,
   deleteOrder,
+  declineOrderDelivery,
 } = require("../Controller/admin.contoller");
 
 router.get("/user/getproducts", getProducts);
