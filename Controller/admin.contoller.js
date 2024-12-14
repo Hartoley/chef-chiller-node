@@ -433,11 +433,11 @@ const deleteOrder = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-
-    if (order.status !== "Pending") {
-      return res
-        .status(400)
-        .json({ message: "Order can only be deleted if status is Pending" });
+    if (order.status !== "Pending" && order.status !== "Delivery declined") {
+      return res.status(400).json({
+        message:
+          "Order can only be deleted if status is Pending or Delivery Declined",
+      });
     }
 
     await adminordersmodel.findByIdAndDelete(orderId);
