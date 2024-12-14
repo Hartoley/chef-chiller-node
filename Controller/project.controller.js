@@ -78,7 +78,6 @@ const getProjectById = async (req, res) => {
   }
 };
 
-// Update Project
 const updateProject = async (req, res) => {
   try {
     const {
@@ -128,7 +127,6 @@ const updateProject = async (req, res) => {
   }
 };
 
-// Delete Project
 const deleteProject = async (req, res) => {
   const { id } = req.params;
   try {

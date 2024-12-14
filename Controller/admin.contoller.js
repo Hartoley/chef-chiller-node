@@ -392,8 +392,7 @@ const uploadPaymentImage = async (req, res) => {
   }
 
   try {
-    // Ensure correct path format for Cloudinary
-    const imagePath = paymentImage.path.replace(/\\/g, "/"); // Correct path format for Cloudinary
+    const imagePath = paymentImage.path.replace(/\\/g, "/");
 
     // Upload the payment image to Cloudinary
     const cloudinaryResponse = await cloudinary.uploader.upload(imagePath, {
@@ -419,6 +418,33 @@ const uploadPaymentImage = async (req, res) => {
     });
   } catch (error) {
     console.error("Error uploading payment image to Cloudinary:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
+  }
+};
+
+const deleteOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await adminordersmodel.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "Pending") {
+      return res
+        .status(400)
+        .json({ message: "Order can only be deleted if status is Pending" });
+    }
+
+    await adminordersmodel.findByIdAndDelete(orderId);
+
+    return res.status(200).json({ message: "Order deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting order:", error);
     return res
       .status(500)
       .json({ message: "An error occurred", error: error.message });
@@ -532,6 +558,38 @@ const approveOrder = async (req, res) => {
   }
 };
 
+const approveOrderDelivery = async (req, res) => {
+  const { orderId } = req.params;
+  console.log(`Approving order with ID: ${orderId}`);
+
+  try {
+    const updatedOrder = await adminordersmodel.findByIdAndUpdate(
+      orderId,
+      { status: "Delivery Approved" },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      console.error(`Order with ID: ${orderId} not found.`);
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    console.log(`Order approved successfully:`, updatedOrder);
+
+    eventEmitter.emit("orderApprovedByAdmin", updatedOrder);
+
+    return res
+      .status(200)
+      .json({ message: "Order approved successfully.", order: updatedOrder });
+  } catch (error) {
+    console.error("Error approving order:", error);
+    return res.status(500).json({
+      message: "An error occurred while approving the order.",
+      error: error.message,
+    });
+  }
+};
+
 const getProductData = async (req, res) => {
   try {
     const product = req.params.productId;
@@ -592,4 +650,6 @@ module.exports = {
   getAllOrders,
   approveOrder,
   DeclineOrder,
+  approveOrderDelivery,
+  deleteOrder,
 };
