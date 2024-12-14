@@ -33,7 +33,7 @@ router.post("/edit/:productId", upload.single("image"), editproduct);
 router.get("/getmyorders/:userId", getOrdersByUserId);
 router.post("/approveorders/:orderId", approveOrder);
 router.post("/declineorders/:orderId", approveOrder);
-router.post("/declinedelivery/:orderId", approveOrderDelivery);
+router.post("/approvedelivery/:orderId", approveOrderDelivery);
 
 router.post("/upload", upload.single("image"), uploadProduct);
 router.post("/deleteOrder/:orderId", deleteOrder);
