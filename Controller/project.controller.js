@@ -1,6 +1,8 @@
 const { Project } = require("../Model/user.model");
 const eventEmitter = require("../eventemmiter");
 const { cloudinary } = require("../utils/cloudinary");
+const {JSDOM}= require('jsdom')
+
 
 const addProject = async (req, res) => {
   try {
@@ -143,6 +145,9 @@ const deleteProject = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+
 
 module.exports = {
   addProject,
