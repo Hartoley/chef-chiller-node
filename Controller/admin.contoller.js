@@ -453,24 +453,20 @@ const deleteOrder = async (req, res) => {
 
 const getOrdersByUserId = async (req, res) => {
   const { userId } = req.params;
-  const { page = 1, limit = 10 } = req.query;
+  console.log(userId);
 
   try {
     const query = userId ? { userId } : {};
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const totalOrders = await adminordersmodel.countDocuments(query);
-    const orders = await adminordersmodel
-      .find(query)
-      .sort({ orderedDate: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    const orders = await adminordersmodel.find(query).sort({ orderedDate: -1 });
 
     if (orders.length === 0) {
-      return res.status(200).json({ message: "No orders found.", orders: [] });
+      return res.status(200).json({ message: "No orders found." });
     }
 
-    return res.status(200).json({ orders, totalOrders }); // ✅ send total
+    eventEmitter.emit("ordersRetrieved", orders);
+    // return res.status(200).json({ orders: orders });
+
+    console.log(orders);
   } catch (error) {
     console.error("Error retrieving orders for admin:", error);
     return res
