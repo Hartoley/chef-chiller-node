@@ -408,6 +408,7 @@ const uploadPaymentImage = async (req, res) => {
 
     order.paymentImage = cloudinaryResponse.secure_url;
     order.status = "Payment Pending";
+    order.paid = true;
 
     await order.save();
 
@@ -494,7 +495,6 @@ const getOrdersByUserId = async (req, res) => {
     });
   }
 };
-
 
 const getAllOrders = async (req, res) => {
   try {
