@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const { string } = require("yup");
 
+// AdminOrder Schema
 const AdminOrderSchema = new mongoose.Schema({
   products: [
     {
@@ -25,7 +25,12 @@ const AdminOrderSchema = new mongoose.Schema({
   paymentImage: { type: String },
 });
 
-const productchema = new mongoose.Schema({
+// Add indexes for efficient querying by user and date
+AdminOrderSchema.index({ userId: 1 });
+AdminOrderSchema.index({ orderedDate: -1 });
+
+// Product Schema
+const productSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true },
   category: { type: String },
   prepTime: { type: String },
@@ -35,6 +40,9 @@ const productchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-const productmodel = mongoose.model("product_collection", productchema);
-const adminordersmodel = mongoose.model("order_collection", AdminOrderSchema);
-module.exports = { productmodel, adminordersmodel };
+// Models
+const ProductModel = mongoose.model("product_collection", productSchema);
+const AdminOrdersModel = mongoose.model("order_collection", AdminOrderSchema);
+
+// Exports
+module.exports = { ProductModel, AdminOrdersModel };
