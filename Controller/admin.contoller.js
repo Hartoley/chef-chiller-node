@@ -453,27 +453,48 @@ const deleteOrder = async (req, res) => {
 
 const getOrdersByUserId = async (req, res) => {
   const { userId } = req.params;
-  console.log(userId);
+
+  // Parse pagination query params with defaults
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  console.log(
+    `Fetching orders for userId: ${userId}, page: ${page}, limit: ${limit}`
+  );
 
   try {
     const query = userId ? { userId } : {};
-    const orders = await adminordersmodel.find(query).sort({ orderedDate: -1 });
 
-    if (orders.length === 0) {
-      return res.status(200).json({ message: "No orders found." });
-    }
+    // Get total count for pagination info
+    const totalOrders = await adminordersmodel.countDocuments(query);
 
+    // Fetch paginated orders sorted by orderedDate descending
+    const orders = await adminordersmodel
+      .find(query)
+      .sort({ orderedDate: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Emit event if needed
     eventEmitter.emit("ordersRetrieved", orders);
-    // return res.status(200).json({ orders: orders });
 
-    console.log(orders);
+    // Return consistent structured response
+    return res.status(200).json({
+      orders,
+      totalOrders,
+      currentPage: page,
+      totalPages: Math.ceil(totalOrders / limit),
+    });
   } catch (error) {
     console.error("Error retrieving orders for admin:", error);
-    return res
-      .status(500)
-      .json({ message: "An error occurred", error: error.message });
+    return res.status(500).json({
+      message: "An error occurred while retrieving orders",
+      error: error.message,
+    });
   }
 };
+
 
 const getAllOrders = async (req, res) => {
   try {
