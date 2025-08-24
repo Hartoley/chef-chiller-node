@@ -1,7 +1,7 @@
 const { Project } = require("../Model/user.model");
 const eventEmitter = require("../eventemmiter");
 const { cloudinary } = require("../utils/cloudinary");
-const {JSDOM}= require('jsdom')
+const { JSDOM } = require('jsdom')
 
 
 const addProject = async (req, res) => {
@@ -96,10 +96,16 @@ const updateProject = async (req, res) => {
     const updatedData = {
       title,
       description,
-      features: Array.isArray(features) ? features : features.split(","),
+      features: Array.isArray(features)
+        ? features
+        : features
+          ? JSON.parse(features)
+          : [], // ✅ safe fallback
       technologies: Array.isArray(technologies)
         ? technologies
-        : technologies.split(","),
+        : technologies
+          ? JSON.parse(technologies)
+          : [], // ✅ safe fallback
       liveDemoLink,
       repoLink,
       status,
@@ -117,7 +123,6 @@ const updateProject = async (req, res) => {
       return res.status(404).json({ message: "Project not found." });
     }
 
-    // Emit event to WebSocket clients when a project is updated
     eventEmitter.emit("projectUpdated", updatedProject);
 
     res.status(200).json({
@@ -128,6 +133,7 @@ const updateProject = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 const deleteProject = async (req, res) => {
   const { id } = req.params;
