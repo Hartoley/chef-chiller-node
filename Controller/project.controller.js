@@ -93,29 +93,31 @@ const updateProject = async (req, res) => {
     } = req.body;
     const image = req.file ? req.file.path : null;
 
-    const updatedData = {
-      title,
-      description,
-      features: Array.isArray(features)
-        ? features
-        : features
-          ? JSON.parse(features)
-          : [], // ✅ safe fallback
-      technologies: Array.isArray(technologies)
-        ? technologies
-        : technologies
-          ? JSON.parse(technologies)
-          : [], // ✅ safe fallback
-      liveDemoLink,
-      repoLink,
-      status,
-    };
+    const updatedData = {};
 
+    if (title !== undefined) updatedData.title = title;
+    if (description !== undefined) updatedData.description = description;
+
+    if (features !== undefined) {
+      updatedData.features = Array.isArray(features)
+        ? features
+        : JSON.parse(features);
+    }
+
+    if (technologies !== undefined) {
+      updatedData.technologies = Array.isArray(technologies)
+        ? technologies
+        : JSON.parse(technologies);
+    }
+
+    if (liveDemoLink !== undefined) updatedData.liveDemoLink = liveDemoLink;
+    if (repoLink !== undefined) updatedData.repoLink = repoLink;
+    if (status !== undefined) updatedData.status = status;
     if (image) updatedData.image = image;
 
     const updatedProject = await Project.findByIdAndUpdate(
       req.params.id,
-      updatedData,
+      { $set: updatedData }, // ✅ only updates provided fields
       { new: true }
     );
 
@@ -133,6 +135,7 @@ const updateProject = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 const deleteProject = async (req, res) => {
