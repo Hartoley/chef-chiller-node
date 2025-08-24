@@ -21,7 +21,7 @@ const {
 
 router.post("/user/register", usersignup);
 router.post("/user/login", userlogin);
-router.post("/updateproject", updateProject);
+router.put("/updateproject/:id", updateProject);
 router.get("/user/getdata", getData);
 router.get("/getallproject", getAllProjects);
 router.delete("/deleteproject/:id", deleteProject);
